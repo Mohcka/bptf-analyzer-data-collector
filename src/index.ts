@@ -3,11 +3,12 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { Hono } from 'hono'
 import { listingEventsTable, listingsTable } from './db/schema';
 import { SQL } from 'bun';
+import { sql } from 'drizzle-orm';
 
 // const client = new SQL(process.env.DATABASE_URL!);
 const db = drizzle(process.env.DATABASE_URL!);
 
-const WS_URL = process.env.WS_URL || 'wss://ws.backpack.tf/events'; // set your websocket URL
+const WS_URL = 'wss://ws.backpack.tf/events'; // set your websocket URL
 let ws: WebSocket | null = null;
 
 async function addDependenciesInTransaction(
@@ -39,9 +40,6 @@ async function addDependenciesInTransaction(
       // });
       // Insert listing
       // const { id, ...restListingData } = listingData;
-      const baseListingFields = {
-
-      }
 
       const listing: typeof listingsTable.$inferInsert = {
         ...listingData,
@@ -134,10 +132,20 @@ function connectWebSocket() {
 }
 
 async function main() {
-  await db.delete(listingEventsTable);
-  await db.delete(listingsTable);
+  console.log('Clearing listing events table...');
+  // await db.delete(listingEventsTable);
+  await db.execute(sql`TRUNCATE TABLE ${listingEventsTable} RESTART IDENTITY;`);
+  console.log('Listing Events cleared.');
+  console.log('Clearing listings...');
+  // await db.delete(listingsTable);
+  await db.execute(sql`TRUNCATE TABLE ${listingsTable} RESTART IDENTITY CASCADE;`);
+  console.log('Listings cleared.');
+  
   // await db.delete(itemsTable);
 
+  console.log('Tables cleared.');
+  console.log('Connecting to WebSocket...');
+  
   connectWebSocket();
 }
 
