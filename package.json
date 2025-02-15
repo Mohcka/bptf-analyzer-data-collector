@@ -6,6 +6,7 @@
     "dev": "bun --hot src/index.ts",
     "drizzle:sync": "drizzle-kit generate --schema src/db/schema.ts",
     "dev:db:push": "drizzle-kit push",
+    "dev:db:push:force": "drizzle-kit push --force",
     "dev:studio": "drizzle-kit studio"
   },
   "devDependencies": {

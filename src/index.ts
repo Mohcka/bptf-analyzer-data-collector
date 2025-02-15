@@ -6,12 +6,14 @@ import { SQL } from 'bun';
 import { sql } from 'drizzle-orm';
 
 // const client = new SQL(process.env.DATABASE_URL!);
+console.log(`Connecting to database: ${process.env.DATABASE_URL}`);
 const db = drizzle(process.env.DATABASE_URL!);
+
 
 const WS_URL = 'wss://ws.backpack.tf/events'; // set your websocket URL
 let ws: WebSocket | null = null;
 
-async function addDependenciesInTransaction(
+async function addDataInTransaction(
   eventData: BPTFListingEvent,
   listingData: ListingPayload,
   // userData: { id: string; name: string; avatar?: string; avatarFull?: string },
@@ -44,7 +46,7 @@ async function addDependenciesInTransaction(
       const listing: typeof listingsTable.$inferInsert = {
         ...listingData,
         metalAmount: listingData.currencies.metal?.toString(),
-        keysAmount: listingData.currencies.keys,
+        keysAmount: listingData.currencies.keys?.toString(),
         valueRaw: listingData.value.raw.toString(),
         valueShort: listingData.value.short.toString(),
         valueLong: listingData.value.long.toString(),
@@ -112,7 +114,7 @@ function connectWebSocket() {
       //     event: e.event,
       //   });
 
-      await addDependenciesInTransaction(e, e.payload);
+      await addDataInTransaction(e, e.payload);
     }
   });
 

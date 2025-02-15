@@ -1,6 +1,4 @@
-import { pgTable, text, integer, boolean, timestamp, json, decimal, unique, varchar, pgEnum } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
-import { real } from 'drizzle-orm/mysql-core';
+import { pgTable, text, integer, boolean, timestamp, decimal, pgEnum } from 'drizzle-orm/pg-core';
 
 export const listingCreationStatusEnum = pgEnum('listing_creation_status', ['listing-update', 'listing-delete']);
 
@@ -91,7 +89,7 @@ export const listingsTable = pgTable('listings', {
   // itemId: text('item_id'),
   appid: integer('appid'),
   metalAmount: decimal('metal_amount'),
-  keysAmount: integer('keys_amount'),
+  keysAmount: decimal('keys_amount'),
   valueRaw: decimal('value_raw'),
   valueShort: text('value_short'),
   valueLong: text('value_long'),
