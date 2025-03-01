@@ -7,7 +7,10 @@
     "drizzle:sync": "drizzle-kit generate --schema src/db/schema.ts",
     "dev:db:push": "drizzle-kit push",
     "dev:db:push:force": "drizzle-kit push --force",
-    "dev:studio": "drizzle-kit studio"
+    "dev:studio": "drizzle-kit studio",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:coverage": "jest --coverage"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -18,6 +21,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "cron": "^4.1.0",
     "drizzle-orm": "^0.39.1",
     "hono": "^4.6.20",
     "pg": "^8.13.1"

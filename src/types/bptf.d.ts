@@ -91,8 +91,26 @@ interface Price {
  */
 interface Quality {
   id: number;
+  name: 'Normal' | 'Unique' | 'Vintage' | 'Genuine' | 'Strange' | 'Unusual' | 
+       'Haunted' | 'Collector\'s' | 'Decorated' | 'Community' | 'Self-Made' | 'Valve';
+  color: '#B2B2B2' | '#FFD700' | '#476291' | '#4D7455' | '#CF6A32' | '#8650AC' | 
+         '#38F3AB' | '#AA0000' | '#FAFAFA' | '#70B04A' | '#A50F79';
+}
+
+/** 
+ * Represents a particle effect for unusual items
+ */
+interface Particle {
+  /** Unique particle effect ID */
+  id: number;
+  /** Full particle effect name */
   name: string;
-  color: string;
+  /** Shortened particle effect name */
+  shortName: string;
+  /** URL to particle effect image */
+  imageUrl: string;
+  /** Particle effect category */
+  type: string;
 }
 
 /** TF2 item information */
@@ -129,6 +147,12 @@ interface Item {
   tradable: boolean;
   /** Whether item can be used in crafting */
   craftable: boolean;
+  /** Killstreak tier (0-3) if applicable */
+  killstreakTier?: number;
+  /** Particle effect information for unusual items */
+  particle?: Particle;
+  /** Price index for priced variations */
+  priceindex?: string;
 }
 
 /** User agent details for automated trading */
