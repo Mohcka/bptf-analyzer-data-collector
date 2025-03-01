@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun --hot src/index.ts",
+    "start": "bun src/index.ts",
     "drizzle:sync": "drizzle-kit generate --schema src/db/schema.ts",
     "dev:db:push": "drizzle-kit push",
     "dev:db:push:force": "drizzle-kit push --force",
