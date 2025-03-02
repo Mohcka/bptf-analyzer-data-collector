@@ -3,6 +3,7 @@ import { config } from '@/config/environment';
 import { addBatchDataInTransaction } from '@/db/transactions/listing-events';
 
 let ws: WebSocket | null = null;
+let processingBatch = false;
 
 export function connectWebSocket() {
   ws = new WebSocket(config.WS_URL);
@@ -12,10 +13,21 @@ export function connectWebSocket() {
   });
 
   ws.on('message', async (data) => {
-    const events = JSON.parse(data.toString()) as BPTFListingEvent[];
-    console.time('BatchTransaction');
-    await addBatchDataInTransaction(events);
-    console.timeEnd('BatchTransaction');
+    // Wait if we're already processing
+    if (processingBatch) {
+      console.log("Backpressure: waiting for previous batch to complete");
+      return; // Or queue messages
+    }
+    
+    processingBatch = true;
+    try {
+      const events = JSON.parse(data.toString()) as BPTFListingEvent[];
+      console.time('BatchTransaction');
+      await addBatchDataInTransaction(events);
+      console.timeEnd('BatchTransaction');
+    } finally {
+      processingBatch = false;
+    }
   });
 
   ws.on('close', (code, reason) => {
