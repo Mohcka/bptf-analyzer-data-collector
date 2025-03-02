@@ -3,9 +3,13 @@ import type { InferInsertModel } from 'drizzle-orm';
 import { db } from '@/db/database';
 import { listingEventsTable } from '@/db/schema';
 
-export async function addBatchDataInTransaction(events: BPTFListingEvent[]) {
+export async function addBatchDataInTransaction(events: BPTFListingEvent[], retryCount = 0) {
+  const MAX_RETRIES = 3;
+  const TRANSACTION_TIMEOUT_MS = 30000; // 30 seconds
+  
   try {
-    await db.transaction(async (trx) => {
+    // Create a promise with timeout
+    const transactionPromise = db.transaction(async (trx) => {
       const listingEvents = events.map((eventData) => ({
         // Event metadata
         id: eventData.id,
@@ -88,8 +92,27 @@ export async function addBatchDataInTransaction(events: BPTFListingEvent[]) {
         await trx.insert(listingEventsTable).values(listingEvents);
       }
     });
+    
+    // Execute with timeout
+    await Promise.race([
+      transactionPromise,
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Transaction timeout')), TRANSACTION_TIMEOUT_MS)
+      )
+    ]);
+    
     console.log(`Batch transaction committed successfully. Processed ${events.length} events`);
   } catch (error) {
-    console.error('Batch transaction failed:', error);
+    console.error(`Batch transaction failed (attempt ${retryCount + 1}/${MAX_RETRIES + 1}):`, error);
+    
+    // Retry logic with exponential backoff
+    if (retryCount < MAX_RETRIES) {
+      const backoffMs = Math.pow(2, retryCount) * 1000;
+      console.log(`Retrying in ${backoffMs}ms...`);
+      await new Promise(resolve => setTimeout(resolve, backoffMs));
+      return addBatchDataInTransaction(events, retryCount + 1);
+    }
+    
+    throw error; // Re-throw if max retries exceeded
   }
 }
