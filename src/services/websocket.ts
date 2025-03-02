@@ -4,6 +4,11 @@ import { addBatchDataInTransaction } from '@/db/transactions/listing-events';
 
 let ws: WebSocket | null = null;
 let processingBatch = false;
+// Add delay between transactions (default 100ms, override in environment config)
+const TRANSACTION_DELAY_MS = 100;
+
+// Helper function to create a delay
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export function connectWebSocket() {
   ws = new WebSocket(config.WS_URL);
@@ -25,6 +30,9 @@ export function connectWebSocket() {
       console.time('BatchTransaction');
       await addBatchDataInTransaction(events);
       console.timeEnd('BatchTransaction');
+      
+      // Add delay between transactions to prevent resource exhaustion
+      await sleep(TRANSACTION_DELAY_MS);
     } finally {
       processingBatch = false;
     }
