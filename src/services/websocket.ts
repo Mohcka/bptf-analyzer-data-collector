@@ -8,6 +8,10 @@ let processingBatch = false;
 const TRANSACTION_DELAY_MS = 100;
 // Transaction timeout (default 30 seconds)
 const TRANSACTION_TIMEOUT_MS = 5000;
+// Heartbeat interval (25 seconds)
+const HEARTBEAT_INTERVAL = 25000;
+// Heartbeat timeout (5 seconds)
+const HEARTBEAT_TIMEOUT = 5000;
 
 // Helper function to create a delay
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -31,12 +35,45 @@ const executeWithTimeout = async (fn: () => Promise<any>, timeoutMs: number, err
 
 export function connectWebSocket() {
   ws = new WebSocket(config.WS_URL);
+  
+  // Heartbeat tracking
+  let heartbeatInterval: NodeJS.Timer | null = null;
+  let missedHeartbeats = 0;
+  
+  function heartbeat() {
+    missedHeartbeats = 0;
+  }
+  
+  function checkConnection() {
+    missedHeartbeats++;
+    if (missedHeartbeats >= 2) {
+      console.log('Connection is dead, reconnecting...');
+      clearInterval(heartbeatInterval!);
+      ws?.terminate(); // Force close the socket
+      setTimeout(() => connectWebSocket(), 1000);
+      return;
+    }
+    
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.ping();
+    }
+  }
 
   ws.on('open', () => {
     console.log("WebSocket connected");
+    
+    // Start the heartbeat system
+    heartbeat();
+    heartbeatInterval = setInterval(checkConnection, HEARTBEAT_INTERVAL);
   });
+  
+  // Reset heartbeat when we receive pong
+  ws.on('pong', heartbeat);
 
   ws.on('message', async (data) => {
+    // Reset heartbeat on any activity
+    heartbeat();
+    
     // Wait if we're already processing
     if (processingBatch) {
       console.log("Backpressure: waiting for previous batch to complete");
@@ -68,6 +105,9 @@ export function connectWebSocket() {
 
   ws.on('close', (code, reason) => {
     console.log(`WebSocket closed. Code: ${code}, Reason: ${reason.toString()}`);
+    // Clean up heartbeat
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    
     // Attempt to reconnect after a delay
     setTimeout(() => {
       console.log('Attempting to reconnect...');
@@ -77,6 +117,7 @@ export function connectWebSocket() {
 
   ws.on('error', (err) => {
     console.error('WebSocket error:', err);
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
     ws?.close();
   });
 }
