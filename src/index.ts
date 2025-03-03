@@ -8,6 +8,7 @@ import { scheduleCleanup } from '@/services/cleanup';
 import { config } from '@/config/environment';
 import apiApp from '@/api/index';
 import { initializeTrending } from '@/scheduler/trending-scheduler';
+import { initializeSchedulers } from './scheduler/init-schedulers';
 
 // Define API server port
 const API_PORT = 3000;
@@ -37,6 +38,8 @@ async function main() {
   // Initialize trending data collection
   console.log('Initializing trending data collector...');
   await initializeTrending();
+
+  initializeSchedulers();
   
   console.log('Connecting to WebSocket...');
   connectWebSocket();

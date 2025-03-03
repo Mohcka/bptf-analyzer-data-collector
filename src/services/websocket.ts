@@ -1,13 +1,12 @@
 import WebSocket from 'ws';
 import { config } from '@/config/environment';
-import { addBatchDataInTransaction } from '@/db/transactions/listing-events';
+import { addBatchDataInTransaction } from '@/db/queries/listing-events';
+import { processBptfEventsFromWebsocket } from '@/db/queries/bptf-items';
 
 let ws: WebSocket | null = null;
 let processingBatch = false;
 // Add delay between transactions (default 100ms, override in environment config)
 const TRANSACTION_DELAY_MS = 100;
-// Transaction timeout (default 30 seconds)
-const TRANSACTION_TIMEOUT_MS = 5000;
 // Heartbeat interval (25 seconds)
 const HEARTBEAT_INTERVAL = 25000;
 // Heartbeat timeout (5 seconds)
@@ -15,23 +14,6 @@ const HEARTBEAT_TIMEOUT = 5000;
 
 // Helper function to create a delay
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Helper function to execute with timeout
-const executeWithTimeout = async (fn: () => Promise<any>, timeoutMs: number, errorMessage: string) => {
-  let timeoutId: NodeJS.Timer;
-  
-  const timeoutPromise = new Promise((_, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(new Error(errorMessage));
-    }, timeoutMs);
-  });
-  
-  try {
-    return await Promise.race([fn(), timeoutPromise]);
-  } finally {
-    clearTimeout(timeoutId!);
-  }
-};
 
 export function connectWebSocket() {
   ws = new WebSocket(config.WS_URL);
@@ -85,11 +67,14 @@ export function connectWebSocket() {
       const events = JSON.parse(data.toString()) as BPTFListingEvent[];
       console.time('BatchTransaction');
       
-      await executeWithTimeout(
-        () => addBatchDataInTransaction(events),
-        TRANSACTION_TIMEOUT_MS,
-        `Transaction timed out after ${TRANSACTION_TIMEOUT_MS}ms while processing ${events.length} events`
-      );
+      // Process for the original listing events table
+      // await addBatchDataInTransaction(events);
+      
+      // Process for the BPTF items tracking system with our new streamlined approach
+      const processedCount = await processBptfEventsFromWebsocket(events);
+      if (processedCount > 0) {
+        console.log(`Processed ${processedCount} events for BPTF item tracking`);
+      }
       
       console.timeEnd('BatchTransaction');
       

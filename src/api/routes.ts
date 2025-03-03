@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
-import { setupTrendingRoutes } from './routes/trending';
+import { setupTrendingRoutes } from '@/api/routes/trending';
+import { setupItemActivityRoutes } from "./routes/trending-v2";
 
 // Export a function to setup all routes
 export function setupRoutes(app: Hono) {
@@ -8,6 +9,7 @@ export function setupRoutes(app: Hono) {
   
   // Setup feature-specific routes
   setupTrendingRoutes(app);
+  setupItemActivityRoutes(app);
   
   // Add more routes as needed here
   

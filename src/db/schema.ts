@@ -1,4 +1,4 @@
-import { pgTable, text, integer, boolean, timestamp, decimal, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, boolean, timestamp, decimal, pgEnum, serial, unique } from 'drizzle-orm/pg-core';
 
 export const listingCreationStatusEnum = pgEnum('listing_creation_status', ['listing-update', 'listing-delete']);
 
@@ -80,3 +80,54 @@ export const listingEventsTable = pgTable('listing_events', {
   source: text('source'),
   creationStatus: listingCreationStatusEnum('creation_status'),
 });
+
+// BPTF Items table - stores unique items with their basic attributes
+export const bptfItemsTable = pgTable('bptf_items', {
+  itemName: text('item_name').primaryKey(),
+  itemQualityName: text('item_quality_name'),
+  itemImageUrl: text('image_url').notNull(),
+  itemColor: text('item_quality_color'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
+// BPTF Item Hourly Stats table - stores hourly activity data for items
+export const bptfItemHourlyStatsTable = pgTable(
+  'bptf_item_hourly_stats',
+  {
+    id: serial('id').primaryKey(),
+    itemName: text('item_name')
+      .notNull()
+      .references(() => bptfItemsTable.itemName, { onDelete: 'cascade' }),
+    hourTimestamp: timestamp('hour_timestamp').notNull(),
+    avgPriceValue: decimal('avg_price_value'),
+    avgPriceUsd: decimal('avg_price_usd'),
+    avgKeysAmount: decimal('avg_keys_amount'),
+    avgMetalAmount: decimal('avg_metal_amount'),
+    updateCount: integer('update_count').notNull().default(0),
+    deleteCount: integer('delete_count').notNull().default(0),
+  },
+  (table) => [
+    unique('unique_item_hour').on(table.itemName, table.hourTimestamp)
+  ]
+);
+
+// Define bptfItemDailyStatsTable similar to hourly stats but for daily aggregation
+export const bptfItemDailyStatsTable = pgTable(
+  "bptf_item_daily_stats",
+  {
+    id: serial("id").primaryKey(),
+    itemName: text("item_name").notNull(),
+    dayTimestamp: timestamp("day_timestamp").notNull(),
+    updateCount: integer("update_count").notNull().default(0),
+    deleteCount: integer("delete_count").notNull().default(0),
+    avgPriceValue: decimal("avg_price_value"),
+    avgPriceUsd: decimal("avg_price_usd"),
+    avgKeysAmount: decimal("avg_keys_amount"),
+    avgMetalAmount: decimal("avg_metal_amount"),
+  },
+  (table) => [
+    unique('unique_item_day').on(table.itemName, table.dayTimestamp)
+  ]
+);
+
